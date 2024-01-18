@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=1">
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<style>
+canvas {
+	width:100%
+}
+textarea{
+width:100%;
+height:300px
+}
+
+input{
+	width:100%;
+}
+
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+<script src="https://xembook.github.io/sympoc/config_symbol_application.js"></script>
+<script src="https://xembook.github.io/sympoc/sympoc.js"></script>
+<script src="https://xembook.github.io/nem2-browserify/symbol-sdk-pack-2.0.4.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@latest/build/qrcode.min.js"></script>
+
+</head>
+<body>
+<div class="container">
+	<h1><i><b>AntokiNote</b></i></h1>
+	<h3>受理</h3>
+<br>
+	<button id="scan" class="btn btn-primary" onclick="clickScan()" disabled>申請者のQRコードをスキャン</button><br>
+<br>
+	<b>申請の種類<br>
+		[例:配給に関する申請]</b><br>
+	<input type="text" value="" id="title"><br>
+	<b>受理する申請内容(650字以内)<br>
+		[例:避難所は使用しないが配給は希望]</b>
+	<textarea id="note"></textarea><br>
+	<button class="btn btn-primary" onclick="clickNote()">暗号化して記録</button><br>
+<br>
+<br>
+<h3>受理者のアドレス</h3>
+<small>公式Webサイト・SNSに掲示することで信頼性を高めることができます。</small>
+
+
+
+<div id="signer_address_plain"></div>
+
+<button class="btn btn-primary" onclick="clickKey()">バックアップ</button>
+<button class="btn btn-primary" onclick="clickCharge()">手数料チャージ</button><br>
+<hr>
+<h3>申請サイトQR</h3>
+申請希望者へ提示してください。
+<canvas id="todoke" width="240" height="240"></canvas>
+
+<footer><i><b>The Power of Symbol Blockchain for All</b></i></footer>
+</div><!-- container -->
+
+<!-- QRスキャンモーダル -->
+<div class="modal fade" id="modal_qr_scan" tabindex="-1" role="dialog">
+	<div class="modal-dialog" role="document"><div class="modal-content">
+
+		<div class="modal-header">
+			<h5 class="modal-title">QRスキャン</h5>
+			<button type="button" class="close" data-dismiss="modal" aria-label="閉じる"><span aria-hidden="true">&times;</span></button>
+		</div>
+
+		<div class="modal-body">
+			<canvas id="canvas"  width="100%" hidden></canvas>
+		</div>
+
+		<div class="modal-footer">
+			<button type="button" class="btn btn-default" data-dismiss="modal">キャンセル</button>
+		</div><!-- /.modal-footer -->
+	</div></div><!-- /.modal-content --><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+
+<!-- 認証モーダル -->
+<div class="modal fade" id="modal_auth" tabindex="-1" role="dialog">
+<div class="modal-dialog" role="document"><div class="modal-content">
+
+	<div class="modal-header">
+		<h5 class="modal-title">認証</h5>
+		<button type="button" class="close" data-dismiss="modal" aria-label="閉じる"><span aria-hidden="true">&times;</span></button>
+	</div>
+
+	<div class="modal-body">
+		<div>
+			<label>パスワード</label>
+			<input type="password" id="modal_input_login_password">
+		</div>
+	</div>
+
+	<div class="modal-footer">
+		<button type="button" class="btn btn-primary" onclick="clickModalAuth()">OK</button>
+		<button type="button" class="btn btn-default" data-dismiss="modal">キャンセル</button>
+	</div><!-- /.modal-footer -->
+</div></div><!-- /.modal-content --><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+
+<!-- アカウント選択モーダル -->
+<div class="modal fade" id="modal_account" tabindex="-1" role="dialog">
+<div class="modal-dialog" role="document"><div class="modal-content">
+
+	<div class="modal-header">
+		<h5 class="modal-title">アカウント作成</h5>
+		<button type="button" class="close" data-dismiss="modal" aria-label="閉じる"><span aria-hidden="true">&times;</span></button>
+	</div>
+	<div class="modal-body">
+		<div>
+
+			<label>パスワード設定<br></label>
+			<input type="password" id="modal_input_password">
+		</div>
+	</div>
+
+	<div class="modal-footer">
+		<button type="button" class="btn btn-primary" onclick="clickModalAccount()">作成</button>
+		<button type="button" class="btn btn-default" data-dismiss="modal">キャンセル</button>
+	</div><!-- /.modal-footer -->
+</div></div><!-- /.modal-content --><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+<!-- 鍵表示モーダル -->
+<div class="modal fade" id="modal_key" tabindex="-1" role="dialog">
+<div class="modal-dialog" role="document"><div class="modal-content">
+	<div class="modal-header">
+		<h5 class="modal-title">鍵情報</h5>
+		<button type="button" class="close" data-dismiss="modal" aria-label="閉じる"><span aria-hidden="true">&times;</span></button>
+	</div>
+	<div class="modal-body">
+	<div>
+		<label>秘密鍵</label>
+		<textarea class="form-control keyarea" id="modal_private_key" rows="2"  >ここにテキストを入力</textarea>
+	</div><br>
+	<small>
+		表示されている秘密鍵は決して誰にも教えないでください。秘密鍵は暗号化した状態でブラウザ内のローカルストレージに保存しています。
+		ローカルストレージはファーストパーティードメイン上で定義しているため、長時間放置していても勝手に消えることはありませんが、
+		プライベートモードでのブラウザ使用やスマートフォンのメモリクリーニングなどのブラウザ外からの操作で消失する可能性があります。
+		秘密鍵が消失する前にウォレットアプリなどへバックアップすることをおすすめします。
+		ウォレットにエクスポートした秘密鍵を使用して、暗号資産などを管理することはお控えください。
+
+	</small>
+	</div>
+	<div class="modal-footer">
+		<button type="button" class="btn btn-default" data-dismiss="modal">閉じる</button>
+	</div><!-- /.modal-footer -->
+</div></div><!-- /.modal-content --><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+	
+
+
+<script type="text/javascript">
+const APP_NAME = "antkino.issuer";
+
+//グローバル変数
+let encryptedSignerJSON;			//暗号化済み署名者アカウント
+let signerRawAddress;
+let signerPublicAccount;
+let targetPublicAccount;
+let networkType;
+let nodeUrl;
+let nodeSocket;
+let currencyMosaicId;
+let signedAggregateTx;
+let announcedTxHash;
+let accountNames;
+let transactionList = new Array();
+let currentValueMinApproval = 0;
+let currentValueMinRemoval = 0;
+let cosignatureRequieredTxes;
+let accountMosaics;
+let accountAddresses;
+let repo;
+//QRスキャンモード
+let scanMode="";
+let authMode="login";
+let maxCosignatureCount = 0;
+
+const title	= document.getElementById('title');
+const note = document.getElementById('note');
+const scan  = document.getElementById('scan');
+
+const sym = require("/node_modules/symbol-sdk");
+const qr  = require("/node_modules/symbol-qr-library");
+const Buffer = require("/node_modules/buffer").Buffer;
+
+(async () => {
+	document.getElementById("todoke")
+	.getContext("bitmaprenderer")
+	.transferFromImageBitmap(
+		(await qrGenerate("file:///Users/ktvs/git/sympoc/qr2.html")).transferToImageBitmap()
+	);
+
+})();
+
+startSymbolApplication( 
+
+	//設定(config.jsより)
+	CONFIG_SYMBOL_APPLICATION,
+
+	////受信トリガー
+
+	//初期設定完了時
+	async function(node){
+		console.log("Connect to Symbol Blockchain");
+		console.log(node);
+		//ディープリンク
+		const params = new URLSearchParams(document.location.search.substring(1));
+		const reset = params.get("reset");
+
+		//グローバル変数
+		nodeUrl = node.url;
+		nodeSocket = node.socket;
+		networkType = sym.NetworkType[CONFIG_SYMBOL_APPLICATION[node.network.identifier]];
+		generationHash = node.network.generationHashSeed;
+		epochAdjustment = node.network.epochAdjustment.slice(0,-1);
+		currencyMosaicId = node.network.currencyMosaicId.split("'").join("").slice(2);
+		repo = new sym.RepositoryFactoryHttp(nodeUrl);
+
+		socketSend(nodeSocket,'block');
+
+		if(localStorage.getItem(APP_NAME) == null|| reset === "true"){
+			alert("端末情報を新規作成します");
+			$("#modal_account").modal("show");
+		}else{
+			$("#modal_auth").modal("show");
+		}
+
+		scan.disabled = false;
+//		$('#modal_qr_scan').modal('show');
+//		startVideo();
+
+	},
+
+	//ソケット受信時
+	async function(event){	
+
+		console.log("onSocketMessage");
+		console.log(event);
+	},
+
+	//QR受信時
+	async function(event){
+		console.log("onPhysicalMessage");
+		console.log(event);
+		targetPublicAccount = sym.PublicAccount.createFromPublicKey(event,networkType);
+		$('#modal_qr_scan').modal('hide');
+		stopVideo();
+
+	},
+
+	////異常時トリガー
+
+	//ソケット再起動時
+	function(nodeSocket){
+		console.log("onSocketResumed");
+		console.log(nodeSocket);
+	},	
+
+	//ノード再選択時
+	function(event){
+		console.log("onStatusChange");
+		console.log(event);
+	}
+);
+
+async function clickModalAccount(){
+
+	const pw = document.getElementById('modal_input_password');
+	const signerAccount = sym.Account.generateNewAccount(networkType);
+	$("#modal_account").modal("hide");
+
+	signerPublicAccount = signerAccount.publicAccount;
+	const signerQR = qr.QRCodeGenerator.createExportAccount(signerAccount.privateKey, networkType, null,pw.value); //passには認証したアカウントから
+
+	encryptedSignerJSON = signerQR.toJSON();
+	localStorage.setItem(APP_NAME,encryptedSignerJSON);
+
+	delete signerAccount;
+	delete signerQR;
+	delete pw;
+	delete pk;
+
+	await settingSignerAccount(signerPublicAccount);
+}
+
+async function settingSignerAccount(publicAccount){
+
+	const signerAddress       = document.getElementById('signer_address');
+	const signerAddressPlain  = document.getElementById('signer_address_plain');
+
+	signerRawAddress = publicAccount.address.plain();
+	const addressQR = new qr.AddressQR("",publicAccount.address);
+	addressQR.toBase64().subscribe(x => {
+		(tag= document.createElement('img')).src = x;
+		//signerAddress.appendChild(tag);
+	});
+
+	signerAddressPlain.textContent = publicAccount.address.plain();
+
+	socketSend(nodeSocket,'status/'   + signerRawAddress);
+	socketSend(nodeSocket,'confirmedAdded/'   + signerRawAddress);
+	socketSend(nodeSocket,'unconfirmedAdded/' + signerRawAddress);
+	socketSend(nodeSocket,'partialAdded/' + signerRawAddress);
+}
+
+async function clickModalAuth(){
+
+	const pw = document.getElementById('modal_input_login_password');
+	let signerQR;
+	try{
+		signerQR = qr.AccountQR.fromJSON(localStorage.getItem(APP_NAME),pw.value);
+	}catch(err){
+		alert("パスワードが正しくありません。");
+		return;
+	}
+
+	$("#modal_auth").modal("hide");
+	const signerAccount = sym.Account.createFromPrivateKey(signerQR.accountPrivateKey,networkType);
+	signerPublicAccount = signerAccount.publicAccount;
+
+	delete pw;
+	delete signerQR;
+
+	if(authMode === "transaction"){
+
+		//最大662文字 0.1182XYM
+		//const message = "テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テスト文章テ";
+		const noteValue = note.value;
+		const titleValue = title.value;
+		if(noteValue === "" || titleValue === ""){
+			alert("受理する申請種類、内容を入力してください。");
+			return false;
+		}
+		const encryptedMessage = signerAccount.encryptMessage(noteValue ,targetPublicAccount);
+		if(encryptedMessage.payload.length > 1023 * 2){
+			alert("申請内容が長すぎます");
+			return false;			
+		}
+		const tx = sym.TransferTransaction.create(
+			sym.Deadline.create(epochAdjustment),
+			targetPublicAccount.address, 
+			[],
+			sym.PlainMessage.create(Buffer.from(encryptedMessage.payload,"hex")),
+			networkType
+		).setMaxFee(100);
+		const signedTx = signerAccount.sign(tx, generationHash);
+		console.log(Buffer.from(encryptedMessage.payload,"hex"));
+
+		metaRepo = repo.createMetadataRepository();
+		mosaicRepo = repo.createMosaicRepository();
+		metaService = new sym.MetadataTransactionService(metaRepo);
+
+		key = sym.KeyGenerator.generateUInt64Key(signedTx.hash);
+		
+		const encryptedTitle = signerAccount.encryptMessage(titleValue ,targetPublicAccount);
+		if(encryptedTitle.payload.length > 1023 * 2){
+			alert("申請種類が長すぎます");
+			return false;			
+		}
+		metaTx = await metaService.createAccountMetadataTransaction(
+			undefined,
+			networkType,
+			signerAccount.address, //メタデータ記録先アドレス
+			key,Buffer.from(encryptedTitle.payload,"hex"), //Key-Value値
+			signerAccount.address //メタデータ作成者アドレス
+		).toPromise();
+
+		aggregateTx = sym.AggregateTransaction.createComplete(
+			sym.Deadline.create(epochAdjustment),
+			[metaTx.toAggregate(signerAccount.publicAccount)],
+			networkType,[]
+		).setMaxFeeForAggregate(100, 0);
+
+		signedMetaTx = signerAccount.sign(aggregateTx,generationHash);
+
+		nodeFetch(nodeUrl + "/transactions","PUT",{"payload": signedTx.payload});
+		nodeFetch(nodeUrl + "/transactions","PUT",{"payload": signedMetaTx.payload});
+
+		clog(nodeUrl,signedTx);
+
+	}else if(authMode === "cosign"){
+	}else if(authMode === "key"){
+		document.getElementById("modal_private_key").textContent = signerAccount.privateKey;
+
+		$("#modal_key").modal("show");
+	}else{
+
+		await settingSignerAccount(signerPublicAccount);
+	}
+	delete signerAccount;
+}
+
+function clickKey(){
+	authMode = "key";
+	$('#modal_auth').modal('show');
+}
+
+function qrGenerate(data){
+	const canvas = new OffscreenCanvas(1, 1);
+
+	return new Promise((res, rej) => QRCode.toCanvas(canvas, data, {}, err => !err ? res(canvas) : rej(err)));
+}
+
+function clickScan(){
+	$('#modal_qr_scan').modal('show');
+	startVideo();
+
+}
+
+function clickNote(){
+	authMode = "transaction";
+	$('#modal_auth').modal('show');
+}
+
+async function clickCharge(){
+	res = await nodeFetch("https://ec2.xembook.net/antoki/" + signerPublicAccount.address.plain());
+
+}
+
+
+
+</script>
+</body>
+</html>
