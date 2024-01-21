@@ -1,4 +1,4 @@
-# AntokiNote
+# *AntokiNote*
 あのときの約束、あんときノート。
 
 ### URLs
