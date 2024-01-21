@@ -24,7 +24,9 @@ https://xembook.github.io/antoki/shinsei.html
 受理者がアドレスを周知することで約束の信頼性を高めることができます。
 
 ### 受理ツール
+![image](https://github.com/xembook/antoki/assets/53205023/d91e0c37-320c-490a-a4b2-e4cd37bb726f)
 
+申請者のQRコードをスキャンしてから、申請の種類と受理する申請内容を記述してブロックチェーンに記録します。
 
 ### 申請ツール
 
