@@ -195,7 +195,7 @@ const Buffer = require("/node_modules/buffer").Buffer;
 	document.getElementById("todoke")
 	.getContext("bitmaprenderer")
 	.transferFromImageBitmap(
-		(await qrGenerate("")).transferToImageBitmap()
+		(await qrGenerate("https://xembook.github.io/antoki/shinsei.html")).transferToImageBitmap()
 	);
 
 })();
