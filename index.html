@@ -4,6 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=1">
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.min.css" integrity="sha512-wJgJNTBBkLit7ymC6vvzM1EcSWeM9mmOu+1USHaRBbHkm6W9EgM0HY27+UtUaprntaYQJF75rc8gjxllKs5OIQ==" crossorigin="anonymous" />
+
 <style>
 canvas {
 	width:100%
@@ -23,6 +25,7 @@ input{
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 <script src="https://xembook.github.io/nem2-browserify/symbol-sdk-pack-2.0.4.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@latest/build/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.min.js" integrity="sha512-zlWWyZq71UMApAjih4WkaRpikgY9Bz1oXIW5G0fED4vk14JjGlQ1UmkGM392jEULP8jbNMiwLWdM8Z87Hu88Fw==" crossorigin="anonymous"></script>
 <script src="config_symbol_application.js"></script>
 <script src="sympoc.js"></script>
 
@@ -50,7 +53,7 @@ input{
 
 <div id="signer_address_plain"></div>
 
-<button class="btn btn-primary" onclick="clickKey()">バックアップ</button>
+<button class="btn btn-primary" onclick="clickBackup()">バックアップ</button>
 <button class="btn btn-primary" onclick="clickCharge()">手数料チャージ</button><br>
 <hr>
 <h3>申請サイトQR</h3>
@@ -104,7 +107,7 @@ input{
 </div><!-- /.modal -->
 
 
-<!-- アカウント選択モーダル -->
+<!-- アカウント作成モーダル -->
 <div class="modal fade" id="modal_account" tabindex="-1" role="dialog">
 <div class="modal-dialog" role="document"><div class="modal-content">
 
@@ -209,7 +212,7 @@ startSymbolApplication(
 
 	//初期設定完了時
 	async function(node){
-		console.log("Connect to Symbol Blockchain");
+		$.toast({heading: 'Information',text: 'Symbolに接続しました',showHideTransition: 'plain',icon: 'info',});
 		console.log(node);
 		//ディープリンク
 		const params = new URLSearchParams(document.location.search.substring(1));
@@ -271,6 +274,7 @@ startSymbolApplication(
 	}
 );
 
+//アカウント作成モーダル内OKボタンクリック
 async function clickModalAccount(){
 
 	const pw = document.getElementById('modal_input_password');
@@ -291,6 +295,7 @@ async function clickModalAccount(){
 	await settingSignerAccount(signerPublicAccount);
 }
 
+//受理者アカウント情報表示設定
 async function settingSignerAccount(publicAccount){
 
 	const signerAddress       = document.getElementById('signer_address');
@@ -311,6 +316,7 @@ async function settingSignerAccount(publicAccount){
 	socketSend(nodeSocket,'partialAdded/' + signerRawAddress);
 }
 
+//認証モーダル内OKボタンクリック
 async function clickModalAuth(){
 
 	const pw = document.getElementById('modal_input_login_password');
@@ -329,6 +335,7 @@ async function clickModalAuth(){
 	delete pw;
 	delete signerQR;
 
+	//暗号化して記録時の認証
 	if(authMode === "transaction"){
 
 		//最大662文字 0.1182XYM
@@ -387,10 +394,14 @@ async function clickModalAuth(){
 		clog(nodeUrl,signedTx);
 
 	}else if(authMode === "cosign"){
+	
+	//バックアップ時の認証
 	}else if(authMode === "key"){
 		document.getElementById("modal_private_key").textContent = signerAccount.privateKey;
 
 		$("#modal_key").modal("show");
+
+	//ログイン時の認証
 	}else{
 
 		await settingSignerAccount(signerPublicAccount);
@@ -398,7 +409,8 @@ async function clickModalAuth(){
 	delete signerAccount;
 }
 
-function clickKey(){
+//バックアップボタンクリック
+function clickBackup(){
 	authMode = "key";
 	$('#modal_auth').modal('show');
 }
@@ -409,17 +421,20 @@ function qrGenerate(data){
 	return new Promise((res, rej) => QRCode.toCanvas(canvas, data, {}, err => !err ? res(canvas) : rej(err)));
 }
 
+//申請者のQRコードをスキャンボタンクリック
 function clickScan(){
 	$('#modal_qr_scan').modal('show');
 	startVideo();
 
 }
 
+//暗号可して記録ボタンクリック
 function clickNote(){
 	authMode = "transaction";
 	$('#modal_auth').modal('show');
 }
 
+//手数料チャージボタンクリック
 async function clickCharge(){
 	res = await nodeFetch("https://ec2.xembook.net/antoki/" + signerPublicAccount.address.plain());
 
